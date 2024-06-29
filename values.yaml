@@ -1,0 +1,75 @@
+namespace: ibulia
+
+labels:
+  student: ibulia
+  domainName: DevOpsClass
+  app: k8s-helm
+  
+configMap:
+  name: configmap-ibulia
+  data:
+    index.html: |
+        <html>
+        <head>
+            <title>Hello Irakli!</title>
+        </head>
+        <body>
+             <h1>Hello, from Kubernetes!</h1>
+             <p>This is a simple HTML page served by a ConfigMap.</p>
+        </body>
+        </html>
+
+deployment:
+  name: web-server-ibulia
+  image:
+    name: nginx
+    repository: nginx
+    version: latest
+  ports:
+    - name: http
+      containerPort: 80
+  replicaCount: 2
+  volumeMounts:
+    - name: index-file
+      mountPath: /usr/share/nginx/html/index.html
+      subPath: index.html
+  volumes:
+    - name: index-file
+      configMap:
+        name: config-map-name
+
+role:
+  name: role-ibulia
+  rules:
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+
+serviceAccount:
+    name: service-account-ibulia
+
+roleBinding:
+  name: rolebinding-ibulia
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+  subjects:
+    - kind: ServiceAccount
+      name: service-account-ibulia
+
+service:
+  name: service-ibulia
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+virtualService:
+  enabled: true
+  name: virtualservice-ibulia
+  hosts:
+    - "ibulia.academy.com"
+  gateways:
+    - istio-system/academy-ingress-gateway

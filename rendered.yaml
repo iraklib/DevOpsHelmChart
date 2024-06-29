@@ -1,0 +1,180 @@
+---
+# Source: helm-ibulia/templates/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata: 
+  name: "ibulia"
+  labels:
+    app: k8s-helm
+    domainName: DevOpsClass
+    student: ibulia
+---
+# Source: helm-ibulia/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: service-account-ibulia
+  namespace: "ibulia"
+  labels:
+    app: k8s-helm
+    domainName: DevOpsClass
+    student: ibulia
+---
+# Source: helm-ibulia/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap-ibulia
+  namespace: "ibulia"
+  labels:
+    app: k8s-helm
+    domainName: DevOpsClass
+    student: ibulia
+data:
+  index.html: |
+    
+    <html>
+    <head>
+        <title>Hello Irakli!</title>
+    </head>
+    <body>
+         <h1>Hello, from Kubernetes!</h1>
+         <p>This is a simple HTML page served by a ConfigMap.</p>
+    </body>
+    </html>
+---
+# Source: helm-ibulia/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: "ibulia"
+  name: role-ibulia
+  labels:
+    app: k8s-helm
+    domainName: DevOpsClass
+    student: ibulia
+rules:
+  apiGroups: 
+    - ""
+  resources: 
+    - pods
+  verbs: 
+    - get
+    - list
+    - watch
+  apiGroups: 
+    - ""
+  resources: 
+    - configmaps
+  verbs: 
+    - get
+    - list
+    - watch
+    - create
+    - delete
+    - update
+    - patch
+---
+# Source: helm-ibulia/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rolebinding-ibulia
+  namespace: "ibulia"
+  labels:
+    app: k8s-helm
+    domainName: DevOpsClass
+    student: ibulia
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: role-ibulia
+subjects:
+  - kind: ServiceAccount
+    name: service-account-ibulia
+    namespace: "ibulia"
+---
+# Source: helm-ibulia/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-ibulia
+  namespace: "ibulia"
+  labels:
+  app: k8s-helm
+  domainName: DevOpsClass
+  student: ibulia
+spec:
+  selector:
+  app: k8s-helm
+  domainName: DevOpsClass
+  student: ibulia
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+---
+# Source: helm-ibulia/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server-ibulia
+  namespace: "ibulia"
+  labels:
+    app: "k8s-helm"
+    domainName: "DevOpsClass"
+    student: "ibulia"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "k8s-helm"
+      domainName: "DevOpsClass"
+      student: "ibulia"
+  template:
+    metadata:
+      labels:
+        app: "k8s-helm"
+        domainName: "DevOpsClass"
+        student: "ibulia"
+    spec:
+      serviceAccountName: service-account-ibulia
+      containers:
+        - name: web-server-ibulia
+          image: "nginx:latest"
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: index-file
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+      volumes:
+        - name: index-file
+          configMap:
+            name: config-map-name
+---
+# Source: helm-ibulia/templates/virtualservice.yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: virtualservice-ibulia
+  namespace: ibulia
+  labels:
+    app: k8s-helm
+    domainName: DevOpsClass
+    student: ibulia
+spec:
+  hosts:
+    - ibulia.academy.com
+  gateways:
+    - istio-system/academy-ingress-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: service-ibulia
+            port:
+              number: 80
